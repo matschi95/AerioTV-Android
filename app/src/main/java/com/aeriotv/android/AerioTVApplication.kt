@@ -24,6 +24,7 @@ import com.aeriotv.android.core.network.ActivePlaylistCredentials
 import com.aeriotv.android.core.network.DispatcharrImageAuthInterceptor
 import com.aeriotv.android.core.network.DispatcharrWarmupCoordinator
 import com.aeriotv.android.core.security.SafeUrlInterceptor
+import com.aeriotv.android.core.security.clientCertificates
 import okhttp3.OkHttpClient
 import com.aeriotv.android.core.preferences.AppPreferences
 import com.aeriotv.android.feature.multiview.MultiviewStore
@@ -76,6 +77,8 @@ class AerioTVApplication : Application(), Configuration.Provider, SingletonImage
     /** Created at launch so stream 401s reach the key broker from the first open (its init registers StreamAuth.handler). */
     @Inject lateinit var authBroker: com.aeriotv.android.core.network.DispatcharrAuthBroker
     @Inject lateinit var timeshiftStore: com.aeriotv.android.core.timeshift.TimeshiftBufferStore
+    /** Injected so its init hands the mTLS key manager its lookup before any request goes out. */
+    @Inject lateinit var clientCertificateStore: com.aeriotv.android.core.security.ClientCertificateStore
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -108,6 +111,7 @@ class AerioTVApplication : Application(), Configuration.Provider, SingletonImage
         val imageHttp = OkHttpClient.Builder()
             // A held profile's addresses get no logo requests (the placeholder shows).
             .addInterceptor(com.aeriotv.android.core.network.HeldRouteGate.interceptor)
+            .clientCertificates()
             .addInterceptor(DispatcharrImageAuthInterceptor(activeCredentials))
             // The key is added before redirects: a logo or poster URL that
             // redirects to a CDN never carries it there, or over https-to-http
@@ -157,6 +161,9 @@ class AerioTVApplication : Application(), Configuration.Provider, SingletonImage
         super.onCreate()
         // Drive sync change times and tombstones (device-local).
         com.aeriotv.android.core.sync.SyncStamps.init(this)
+        // Client certificates (mTLS) for HttpURLConnection too: the LAN
+        // probe has no factory setter.
+        com.aeriotv.android.core.security.ClientCertificates.installDefault()
         // Profiles: restore the active Dispatcharr profile's scope before any
         // scoped read (favorites, recents, view prefs) can run, then start the
         // one-time default-profile migration and active-playlist tracking.

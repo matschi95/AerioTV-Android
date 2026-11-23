@@ -2,6 +2,7 @@ package com.aeriotv.android.core.network
 
 import android.util.Log
 import com.aeriotv.android.core.debug.LogSanitizer
+import com.aeriotv.android.core.security.clientCertificates
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpTimeout
@@ -35,6 +36,7 @@ class PlaylistFetcher @Inject constructor() {
         engine {
             // A held profile's addresses get no guide or playlist downloads.
             addInterceptor(HeldRouteGate.interceptor)
+            config { clientCertificates() }
         }
         install(HttpTimeout) {
             // Mirror the iOS URLSession model (StreamingAPIs.swift): a generous
@@ -122,6 +124,7 @@ class PlaylistFetcher @Inject constructor() {
      *  background-priority EPG dispatcher does all of this work niced. */
     private val streamingClient = okhttp3.OkHttpClient.Builder()
         .addInterceptor(HeldRouteGate.interceptor)
+        .clientCertificates()
         .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
         .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
         // No call-level total timeout, same reasoning as the ktor config

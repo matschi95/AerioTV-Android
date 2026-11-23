@@ -1375,8 +1375,10 @@ class PlaylistViewModel @Inject constructor(
      * allocate a 103877413 byte allocation..." reads like a crash, not
      * guidance (Discord report, Onn 4K, 2026-07-29).
      */
-    private fun loadFailureMessage(prefix: String, t: Throwable): String =
-        if (t is com.aeriotv.android.core.profiles.StoredSecrets.Refused) {
+    private fun loadFailureMessage(prefix: String, t: Throwable): String {
+        val mtls = com.aeriotv.android.core.security.ClientCertificates
+            .describe(t, com.aeriotv.android.core.security.ClientCertificates.hostOf(_state.value.url))
+        return if (t is com.aeriotv.android.core.profiles.StoredSecrets.Refused) {
             // Shown as it is: it says what to type (StoredSecrets).
             t.message.orEmpty()
         } else if (t is RateLimitRetry.RateLimitedFinal) {
@@ -1387,9 +1389,12 @@ class PlaylistViewModel @Inject constructor(
         } else if (t is OutOfMemoryError) {
             "$prefix: playlist is too large for this device's memory. If this is an " +
                 "Xtream Codes get.php link, add it with the Xtream Codes source type instead."
+        } else if (mtls != null) {
+            "$prefix: $mtls"
         } else {
             "$prefix: ${LogSanitizer.redact(t.message ?: t::class.simpleName ?: "unknown error")}"
         }
+    }
 
     private var epgLoadJob: kotlinx.coroutines.Job? = null
     private var epgLoadPlaylistId: String? = null
