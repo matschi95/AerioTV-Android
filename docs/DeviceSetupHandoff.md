@@ -227,7 +227,8 @@ Unknown keys are ignored by readers; absent keys take the defaults shown.
     "catchupOffsetMinutes": 0,
     "vodEnabled": true,
     "channelProfileIds": [2],
-    "credential": { "apiKey": "...", "username": "...", "password": "..." }
+    "credential": { "apiKey": "...", "username": "...", "password": "..." },
+    "clientCertificate": { "p12": "<standard base64>", "password": "..." }
   },
   "profiles": [
     {
@@ -280,6 +281,9 @@ Notes:
 - "Import this user only" sends one entry, marked `isDefault` true with
   `order` 0 and no `credential`; `playlist.credential` carries that
   user's sign-in.
+- `clientCertificate` is the client certificate (mTLS) the sender keeps
+  for the host of `url`: the original PKCS#12 file, standard base64, and
+  its password. Absent when there is none. Sent for every playlist type.
 - XC and M3U playlists send `playlist` only.
 - `sync` is present only when the user chose to turn it on.
 - `mode` is optional: absent = a setup (every sender before Fix Login);
@@ -290,9 +294,10 @@ Notes:
 
 Non-interactive, with a progress line on screen:
 
-1. "Connecting to your server": add the playlist through the normal Add
-   Playlist save path (it loads the channels, which is the connection
-   test), then store the catch-up offset. On failure: "Setup did not
+1. "Connecting to your server": keep `clientCertificate` for the host of
+   `url` first (a file that does not open is logged and skipped), then add
+   the playlist through the normal Add Playlist save path (it loads the
+   channels, which is the connection test), then store the catch-up offset. On failure: "Setup did not
    finish" with the error, Retry (re-applies the same payload), and Cancel.
    Playlist id: when a playlist here already has `playlist.id`, it is the
    same playlist and is updated in place (Replace, "Updating your

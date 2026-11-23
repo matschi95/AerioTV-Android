@@ -111,6 +111,8 @@ class FixLoginTest {
         assertEquals("new-key", p.playlist.credential?.apiKey)
         assertTrue(p.profiles.isEmpty())
         assertNull(p.sync)
+        val withCert = playlistPart.copy(clientCertificate = SetupProtocol.ClientCertificatePart(p12 = "MA==", password = "x"))
+        assertNull(fixLoginPayload(withCert, tvPid)!!.playlist.clientCertificate)
         val json = SetupProtocol.encodePayload(p).toString(Charsets.UTF_8)
         assertTrue(json, json.contains("\"mode\":\"fixlogin\""))
         assertFalse(json, json.contains("\"sync\""))

@@ -14,6 +14,8 @@ import com.aeriotv.android.core.profiles.PinRules
 import com.aeriotv.android.core.profiles.ProfileManager
 import com.aeriotv.android.core.profiles.StoredSecrets
 import com.aeriotv.android.core.profiles.effectiveRole
+import com.aeriotv.android.core.security.ClientCertificateStore
+import com.aeriotv.android.core.security.ClientCertificates
 import com.aeriotv.android.core.sync.dsync.DispatcharrSyncManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
@@ -198,6 +200,7 @@ class SetupDiscovery(private val context: Context) {
 class SetupSender(
     private val profiles: ProfileManager,
     private val prefs: AppPreferences,
+    private val certificates: ClientCertificateStore,
 ) {
     data class ProfileChoice(
         val profileId: String,
@@ -279,6 +282,8 @@ class SetupSender(
             vodEnabled = row.vodEnabled,
             channelProfileIds = listOfNotNull(row.dispatcharrProfileId),
             credential = credential,
+            clientCertificate = ClientCertificates.hostOf(row.urlString)?.let(certificates::export)
+                ?.let { (p12, password) -> SetupProtocol.ClientCertificatePart(SetupCrypto.b64(p12), password) },
         )
         // Presence only, never a value.
         Log.i(TAG, "[SETUP] payload sign-in key=${presence(credential?.apiKey)} password=${presence(credential?.password)}")
@@ -471,7 +476,8 @@ internal fun fixLoginPayload(playlist: SetupProtocol.PlaylistPart, receiverPlayl
     val cred = playlist.credential?.takeIf { it.apiKey != null || it.password != null } ?: return null
     val id = receiverPlaylistId.trim().takeIf { it.isNotEmpty() } ?: return null
     return SetupProtocol.Payload(
-        playlist = playlist.copy(id = id, credential = cred),
+        // The client certificate stays home: Fix Login carries the sign-in only.
+        playlist = playlist.copy(id = id, credential = cred, clientCertificate = null),
         profiles = emptyList(),
         sync = null,
         mode = SetupProtocol.MODE_FIX_LOGIN,

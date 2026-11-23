@@ -90,6 +90,7 @@ class UserQrViewModel @Inject constructor(
     private val prefs: com.aeriotv.android.core.preferences.AppPreferences,
     private val dispatcharrClient: com.aeriotv.android.core.network.DispatcharrClient,
     private val repository: com.aeriotv.android.core.data.repository.PlaylistRepository,
+    private val certificates: com.aeriotv.android.core.security.ClientCertificateStore,
 ) : ViewModel() {
     /** [displayName]: the profile's name as the profile list shows it (the PIN pad names it). */
     data class Target(val playlistId: String, val profileId: String, val username: String, val displayName: String)
@@ -123,7 +124,7 @@ class UserQrViewModel @Inject constructor(
      */
     fun source(t: Target, text: String): com.aeriotv.android.core.setup.UserQrSource? {
         val key = com.aeriotv.android.core.qr.ScannedCode.parseUserKey(text)?.apiKey ?: return null
-        val sender = com.aeriotv.android.core.setup.SetupSender(manager, prefs)
+        val sender = com.aeriotv.android.core.setup.SetupSender(manager, prefs, certificates)
         return com.aeriotv.android.core.setup.UserQrSource(
             context = appContext,
             apiKey = key,
